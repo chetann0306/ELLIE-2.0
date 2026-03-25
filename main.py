@@ -27,11 +27,11 @@ print("="*70 + "\n")
 print("✅ Audio system initialized")
 
 # Start wake word detection
-try:
-    start_wake_word_detection()
-    print("✅ Wake word detection started")
-except Exception as e:
-    print(f"⚠️ Wake word detection error: {e}")
+#try:
+#    start_wake_word_detection()
+#    print("✅ Wake word detection started")
+#except Exception as e:
+#    print(f"⚠️ Wake word detection error: {e}")
 
 # Open browser
 print("🌐 Opening browser...")

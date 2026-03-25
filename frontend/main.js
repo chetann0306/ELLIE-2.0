@@ -109,7 +109,7 @@ $(document).ready(function () {
       setTimeout(() => setSiriMessage("Tap the mic to speak"), 1200);
     }
   }
-  startupGreeting();
+  //startupGreeting();
 
   //  MIC BUTTON HANDLER 
   $("#MicBtn").on("click", function () {
@@ -119,7 +119,7 @@ $(document).ready(function () {
     showSiriView($btn);
 
     if (typeof eel !== "undefined" && eel.play_assistant_sound) {
-      try { eel.play_assistant_sound()(); } catch (e) { console.warn(e); }
+     try { eel.play_assistant_sound()(); } catch (e) { console.warn(e); }
     }
 
     if (typeof eel !== "undefined" && eel.takeAllCommands) {
@@ -268,14 +268,14 @@ $(document).ready(function () {
   }
 
   // ================== NEW: WAKE WORD LISTENER ==================
-  if (typeof eel !== "undefined" && eel.wake_listener) {
-    try {
-      eel.wake_listener(); // starts Python background listener
-      console.log("Wake listener started successfully.");
-    } catch (e) {
-      console.warn("Failed to start wake listener:", e);
-    }
-  }
+  //if (typeof eel !== "undefined" && eel.wake_listener) {
+  //  try {
+  //    eel.wake_listener(); // starts Python background listener
+  //    console.log("Wake listener started successfully.");
+  //  } catch (e) {
+  //    console.warn("Failed to start wake listener:", e);
+  //  }
+  //}
 
   // Called by backend when wake word is detected
   eel.expose(ShowSiriWave);
@@ -285,4 +285,58 @@ $(document).ready(function () {
     $(".siri-message").text("Listening...");
     startSiriWave();
   }
-});
+  // ================== AUTHENTICATION & STARTUP ==================
+  
+  function unlockAssistant() {
+    // 1. Hide Login, Show Main App
+    $("#LoginScreen").fadeOut(300, function() {
+        $("#MainApp").fadeIn(500);
+        
+        // 2. Now that we are in, play the startup greeting
+        startupGreeting();
+        
+        // 3. Start the background microphone listener
+        if (typeof eel !== "undefined" && eel.wake_listener) {
+            try {
+                eel.wake_listener();
+                console.log("Wake listener started successfully.");
+            } catch (e) {
+                console.warn("Failed to start wake listener:", e);
+            }
+        }
+    });
+  }
+
+  function handleLogin() {
+    const pwd = $("#passwordInput").val().trim();
+    
+    if (typeof eel !== "undefined" && eel.verify_password) {
+        eel.verify_password(pwd)(function(isValid) {
+            if (isValid) {
+                $("#loginError").hide();
+                unlockAssistant();
+            } else {
+                $("#loginError").fadeIn();
+                $("#passwordInput").val("").focus();
+                // Optional shake animation on error
+                $(".login-box").effect("shake", { distance: 5, times: 3 }, 300); 
+            }
+        });
+    } else {
+        alert("Backend not connected.");
+    }
+  }
+
+  // Click the Unlock Button
+  $("#loginBtn").on("click", function() {
+      handleLogin();
+  });
+
+  // Press Enter to Unlock
+  $("#passwordInput").on("keypress", function(e) {
+      if (e.which === 13) {
+          handleLogin();
+      }
+  });
+
+}); // <-- THIS MUST BE THE ABSOLUTE LAST LINE IN THE FILE. NO BRACKETS BELOW THIS.

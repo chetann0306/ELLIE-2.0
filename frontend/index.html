@@ -20,6 +20,22 @@
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
+    <div id="LoginScreen" class="login-container">
+        <div class="login-box">
+            <h2 style="color: #1e90ff; font-family: cursive;">System Lock</h2>
+            <p style="color: #aaa; font-size: 14px;">Enter password to access Ellie</p>
+            <input type="password" id="passwordInput" placeholder="Password..." autocomplete="off">
+            <button id="loginBtn" class="glow-on-hover" style="width: 100px; margin-top: 10px;">Unlock</button>
+            <p id="loginError" style="color: #ff4444; margin-top: 15px; display: none; font-size: 12px;">Incorrect Password</p>
+        </div>
+    </div>
+
+    <div id="MainApp" style="display: none;">
+        <div class="container">
+            </div>
+    </div>
+
+
     <div class="container">
     <section id="Oval" class="mb-4">
     <div class="row">

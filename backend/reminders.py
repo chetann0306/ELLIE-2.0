@@ -98,7 +98,7 @@ class ReminderManager:
         except Exception as e:
             print(f"Error triggering reminder: {e}")
     
-    @eel.expose
+  
     def add_reminder(self, title, description="", time_str="12:00", date_str=None, repeat_type="once"):
         """Add a new reminder."""
         try:
@@ -125,7 +125,7 @@ class ReminderManager:
         except Exception as e:
             return {"success": False, "error": str(e)}
     
-    @eel.expose
+
     def get_all_reminders(self):
         """Get all reminders."""
         try:
@@ -140,7 +140,7 @@ class ReminderManager:
             print(f"Error fetching reminders: {e}")
             return []
     
-    @eel.expose
+
     def get_reminder(self, reminder_id):
         """Get a specific reminder."""
         try:
@@ -155,7 +155,7 @@ class ReminderManager:
             print(f"Error fetching reminder: {e}")
             return None
     
-    @eel.expose
+
     def delete_reminder(self, reminder_id):
         """Delete a reminder."""
         try:
@@ -174,7 +174,7 @@ class ReminderManager:
         except Exception as e:
             return {"success": False, "error": str(e)}
     
-    @eel.expose
+
     def snooze_reminder(self, reminder_id, minutes=5):
         """Snooze a reminder for N minutes."""
         try:
@@ -205,3 +205,22 @@ class ReminderManager:
 
 # Initialize reminder manager
 reminder_manager = ReminderManager()
+@eel.expose
+def add_reminder(title, description="", time_str="12:00", date_str=None, repeat_type="once"):
+    return reminder_manager.add_reminder(title, description, time_str, date_str, repeat_type)
+
+@eel.expose
+def get_all_reminders():
+    return reminder_manager.get_all_reminders()
+
+@eel.expose
+def get_reminder(reminder_id):
+    return reminder_manager.get_reminder(reminder_id)
+
+@eel.expose
+def delete_reminder(reminder_id):
+    return reminder_manager.delete_reminder(reminder_id)
+
+@eel.expose
+def snooze_reminder(reminder_id, minutes=5):
+    return reminder_manager.snooze_reminder(reminder_id, minutes)

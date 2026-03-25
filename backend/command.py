@@ -856,3 +856,30 @@ def wake_listener():
         error_msg = f"Wake listener error: {str(e)}"
         print(error_msg)
         return {"success": False, "error": error_msg}
+    
+    # Add this import at the top with the others in backend/command.py
+from backend.config import SYSTEM_PASSWORD
+
+# ... (rest of your command.py code) ...
+
+# Add this at the very bottom of backend/command.py
+@eel.expose
+def verify_password(input_password):
+    try:
+        # Import right inside the function to avoid circular import errors
+        from backend.config import SYSTEM_PASSWORD 
+        
+        # Convert both to lowercase and remove hidden spaces
+        clean_input = str(input_password).strip().lower()
+        clean_system = str(SYSTEM_PASSWORD).strip().lower()
+        
+        if clean_input == clean_system:
+            print("✅ Password verified successfully")
+            return True
+        else:
+            print(f"❌ Password mismatch. Expected: '{clean_system}', Got: '{clean_input}'")
+            return False
+            
+    except Exception as e:
+        print(f"⚠️ Password verification error: {e}")
+        return False

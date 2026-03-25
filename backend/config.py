@@ -13,3 +13,6 @@ MAX_RESPONSE_LENGTH = 200  # Characters per chunk
 # Wake Word Settings
 WAKE_WORDS = ["hey ellie", "hi ellie", "okay ellie", "hey", "hi", "hello"]
 WAKE_WORD_SENSITIVITY = 0.8  # 0.0 to 1.0
+
+ASSISTANT_NAME = "ELLIE"
+SYSTEM_PASSWORD = "aakriti"
