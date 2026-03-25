@@ -200,9 +200,60 @@ $(document).ready(function () {
   });
 
   //  CHAT BUTTON HANDLER 
-  $("#ChatBtn").on("click", function () {
+// ================== CHAT BUTTON & TEXT INPUT HANDLER ==================
+  function handleTextMessage() {
     const txt = $("#chatbox").val().trim();
-    if (txt.length) setSiriMessage(txt);
+    
+    if (txt.length > 0) {
+      // 1. Clear the input box
+      $("#chatbox").val(""); 
+      
+      // 2. Show the Siri wave UI while it thinks
+      showSiriView($("#ChatBtn")); 
+      setSiriMessage("Processing...");
+
+      // 3. Send the text to the Python backend
+      if (typeof eel !== "undefined" && eel.process_recognized_command) {
+        eel.process_recognized_command(txt)(function (res) {
+          
+          // Note: The Python backend automatically calls speak_queued(reply) 
+          // and _safely_call_frontend_display(reply), so the voice and text 
+          // will play automatically. We just handle the UI restoration here.
+          
+          if (res && res.success) {
+            // Calculate a rough delay based on text length to keep the wave active while speaking
+            const replyText = res.reply || "";
+            const fallbackMs = Math.max(3000, replyText.length * 70) + 1000;
+            
+            setTimeout(function () { 
+              restoreMainView($("#ChatBtn")); 
+            }, fallbackMs);
+
+          } else {
+            const errMsg = res ? res.error : "Failed to connect to backend.";
+            setSiriMessage(errMsg);
+            setTimeout(function () { 
+              restoreMainView($("#ChatBtn")); 
+            }, 2000);
+          }
+        });
+      } else {
+        setSiriMessage("Backend not connected.");
+        setTimeout(function () { restoreMainView($("#ChatBtn")); }, 2000);
+      }
+    }
+  }
+
+  // Trigger when the Chat button is clicked
+  $("#ChatBtn").on("click", function () {
+    handleTextMessage();
+  });
+
+  // Trigger when the 'Enter' key is pressed inside the chatbox
+  $("#chatbox").on("keypress", function (e) {
+    if (e.which === 13) { 
+      handleTextMessage();
+    }
   });
 
   //  MICROPHONE DEBUG 
