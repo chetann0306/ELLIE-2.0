@@ -1,0 +1,54 @@
+/envellie/
+# Reminders database
+reminders.db
+reminders.db-journal
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Existing entries (keep your existing entries)
+/envellie/
+# Wake word detector logs
+wake_word_*.log
+
+# Existing entries
+reminders.db
+reminders.db-journal
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+ENV/
+.vscode/
+.idea/
+*.swp
+*.swo
+*.log
+.DS_Store
+Thumbs.db
+/envellie/
