@@ -21,7 +21,7 @@ def AuthenticateFace():
     id = 2  # number of persons you want to Recognize
 
 
-    names = ['','', 'Ankit']  # names, leave first empty bcz counter starts from 0
+    names = ['','', 'chetan']  # names, leave first empty bcz counter starts from 0
 
 
     cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # cv2.CAP_DSHOW to remove warning
@@ -54,21 +54,25 @@ def AuthenticateFace():
             cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
             # to predict on every single image
+            # to predict on every single image
             id, accuracy = recognizer.predict(converted_image[y:y+h, x:x+w])
 
-            # Check if accuracy is less them 100 ==> "0" is perfect match
-            if (accuracy < 100):
+            # STRICTER THRESHOLD: Lower number = stricter match. 
+            # 40-60 is usually a good sweet spot for high security.
+            if (accuracy < 55): 
                 id = names[id]
-                accuracy = "  {0}%".format(round(100 - accuracy))
+                # We calculate the display percentage based on our new strictness
+                display_accuracy = round(100 - accuracy)
+                accuracy_text = f"  {display_accuracy}%"
                 flag = 1
             else:
                 id = "unknown"
-                accuracy = "  {0}%".format(round(100 - accuracy))
+                display_accuracy = round(100 - accuracy)
+                accuracy_text = f"  {display_accuracy}%"
                 flag = 0
 
             cv2.putText(img, str(id), (x+5, y-5), font, 1, (255, 255, 255), 2)
-            cv2.putText(img, str(accuracy), (x+5, y+h-5),
-                        font, 1, (255, 255, 0), 1)
+            cv2.putText(img, str(accuracy_text), (x+5, y+h-5), font, 1, (255, 255, 0), 1)
 
         cv2.imshow('camera', img)
 
