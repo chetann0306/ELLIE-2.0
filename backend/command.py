@@ -8,6 +8,7 @@ import requests
 from backend.config import ASSISTANT_NAME, TTS_RATE
 import sys
 import re
+from backend.auth.recoganize import AuthenticateFace
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from backend.wake_word_detector import (
@@ -883,3 +884,21 @@ def verify_password(input_password):
     except Exception as e:
         print(f"⚠️ Password verification error: {e}")
         return False
+
+@eel.expose
+def verify_face():
+    print("📷 Initializing camera for Face Recognition...")
+    try:
+        # This calls your script. It will open a cv2 window and return 1 if matched.
+        result = AuthenticateFace() 
+        
+        if result == 1:
+            print("🔓 Face Match: System Unlocked!")
+            return True
+        else:
+            print("🔒 Face not recognized or camera window closed.")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Face auth error: {e}")
+        return False    

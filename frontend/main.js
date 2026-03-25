@@ -338,5 +338,70 @@ $(document).ready(function () {
           handleLogin();
       }
   });
-
-}); // <-- THIS MUST BE THE ABSOLUTE LAST LINE IN THE FILE. NO BRACKETS BELOW THIS.
+// ================== FACE UNLOCK HANDLER ==================
+  $("#faceUnlockBtn").on("click", function(e) {
+      e.preventDefault();
+      
+      // 1. Hide Login Box, Show the Startup Sequence Screen
+      $("#LoginScreen").fadeOut(300, function() {
+          $("#Start").fadeIn(300);
+          
+          // Show the SVG Loader first
+          $("#Loader").prop("hidden", false);
+          $("#FaceAuth").prop("hidden", true);
+          $("#FaceAuthSuccess").prop("hidden", true);
+          $("#HelloGreet").prop("hidden", true);
+          $("#WishMessage").text("Initializing Camera...");
+          
+          // 2. After 1.5 seconds, switch to the Face Scanning Lottie
+          setTimeout(function() {
+              $("#Loader").prop("hidden", true);
+              $("#FaceAuth").prop("hidden", false);
+              $("#WishMessage").text("Scanning Face... Look at the lens!");
+              
+              // Call Python to check the camera
+              if (typeof eel !== "undefined" && eel.verify_face) {
+                  eel.verify_face()(function(isValid) {
+                      if (isValid === true) {
+                          
+                          // 3. Match Found! Show the Green Success Lottie
+                          $("#FaceAuth").prop("hidden", true);
+                          $("#FaceAuthSuccess").prop("hidden", false);
+                          $("#WishMessage").text("Identity Verified.");
+                          
+                          // 4. After 2 seconds, show the Welcome Greet Lottie
+                          setTimeout(function() {
+                              $("#FaceAuthSuccess").prop("hidden", true);
+                              $("#HelloGreet").prop("hidden", false);
+                              $("#WishMessage").text("Welcome back, Boss.");
+                              
+                              // 5. Finally, unlock the main assistant UI
+                              setTimeout(function() {
+                                  $("#Start").fadeOut(500, function() {
+                                      unlockAssistant();
+                                  });
+                              }, 2500);
+                              
+                          }, 2000);
+                          
+                      } else {
+                          // Failed Match: Go back to Login Screen
+                          $("#Start").fadeOut(300, function() {
+                              $("#LoginScreen").fadeIn(300);
+                              $("#loginError").text("Face not recognized. Try again or use password.").css("color", "#ff4444").fadeIn();
+                              if (typeof $(".login-box").effect === "function") {
+                                  $(".login-box").effect("shake", { distance: 5, times: 3 }, 300);
+                              }
+                          });
+                      }
+                  });
+              } else {
+                  console.error("⚠️ CRITICAL ERROR: eel.verify_face is missing!");
+                  $("#Start").hide();
+                  $("#LoginScreen").show();
+                  $("#loginError").text("Camera module not connected.").css("color", "#ff4444").fadeIn();
+              }
+          }, 1500); // Time to show the initial SVG loader
+      });
+  });
+});
