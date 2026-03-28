@@ -84,6 +84,12 @@ class AudioSystem:
         """Worker thread that processes speech queue."""
         print("🎵 Audio worker thread started")
         
+        # 1. THE MAGIC FIX: Import Windows COM library
+        import pythoncom 
+        
+        # 2. THE MAGIC FIX: Initialize COM for this specific background thread
+        pythoncom.CoInitialize()
+        
         while not self.stop_flag:
             try:
                 # Get from queue with timeout
@@ -100,9 +106,11 @@ class AudioSystem:
                 
                 try:
                     with self.lock:
-                        # Initialize engine if needed
-                        if self.engine is None:
-                            self.init_engine()
+                        # 3. Ensure COM is awake right before initializing the engine
+                        pythoncom.CoInitialize() 
+                        
+                        # Completely rebuild the engine using your existing setup function
+                        self.init_engine()
                         
                         if self.engine:
                             self.engine.say(text)
@@ -111,10 +119,15 @@ class AudioSystem:
                 
                 except Exception as e:
                     print(f"❌ Speech error: {e}")
-                    # Reset engine on error
-                    self.engine = None
                 
                 finally:
+                    # Tear it down to prevent zombie states
+                    if self.engine:
+                        try:
+                            self.engine.stop()
+                        except:
+                            pass
+                    self.engine = None
                     self.is_speaking = False
                     time.sleep(0.5)  # Delay between speeches
                     
@@ -124,7 +137,7 @@ class AudioSystem:
                 time.sleep(0.5)
         
         print("🛑 Audio worker thread stopped")
-    
+           
     def start_worker(self):
         """Start the audio worker thread."""
         if not self.is_running:
