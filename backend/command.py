@@ -563,6 +563,30 @@ def takeAllCommands(device_index=None):
                 "url": result.get('url'),
                 "reply": result.get('message')
             }
+        elif "send message" in recognized_text or "whatsapp" in recognized_text:
+                from backend.whatsapp_handler import findContact, listen_for_message, send_whatsapp_message
+                
+                # 1. Look up the person in the database
+                phone, name = findContact(recognized_text)
+                
+                if phone != 0:
+                    # 2. Ask what to send
+                    ask_msg = f"What message should I send to {name}?"
+                    speak(ask_msg)
+                    
+                    # 3. Listen for the payload via the handler
+                    msg_payload = listen_for_message()
+                    
+                    if msg_payload:
+                        speak(f"Sending message to {name}...")
+                        
+                        # 4. Automate WhatsApp
+                        result = send_whatsapp_message(phone, msg_payload, name)
+                        speak(result)
+                    else:
+                        speak("I didn't catch that. Message cancelled.")
+                else:
+                    speak(f"Sorry, I couldn't find {name} in your contacts.")
 
     # ============== OPEN/LAUNCH COMMAND ==============
     intent_found = any(kw in lowered for kw in ("open ", "launch ", "start "))
