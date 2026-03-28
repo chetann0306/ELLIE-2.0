@@ -32,58 +32,62 @@ except Exception as e:
 
 def ai_chat_response(prompt: str) -> str:
     """
-    Local offline Mistral inference using llama_cpp.
-    Optimized for audio output.
+    Local offline Phi-3 inference using llama_cpp.
+    Optimized for audio output and blazing fast speed.
     """
     import os
     from llama_cpp import Llama
     from backend.config import CHAT_TEMPERATURE
 
-    model_path = os.path.join(os.path.dirname(__file__), "mistral-7b-instruct-v0.1.Q4_K_M.gguf")
+    # 1. Point to the new Phi-3 model inside the models folder
+    model_path = os.path.join(os.path.dirname(__file__), "models", "Phi-3-mini-4k-instruct-q4_k_m.gguf")
 
     if not os.path.exists(model_path):
-        return "My local model is missing. Please place the mistral-7b-instruct-v0.1.Q4_K_M.gguf file in the backend folder."
+        return "My local model is missing. Please place the Phi-3 file in the backend/models folder."
 
     global local_llm
     if 'local_llm' not in globals():
-        print("Loading local Mistral model...")
+        print("🧠 Loading local Phi-3 model...")
         try:
             local_llm = Llama(
                 model_path=model_path,
                 n_ctx=2048,
+                n_gpu_layers=-1,  # CRITICAL: Forces it to use your GPU for instant speed
                 n_threads=8,
                 n_batch=128,
                 verbose=False
             )
-            print("✅ Model loaded successfully!")
+            print("✅ Phi-3 Model loaded successfully!")
         except Exception as e:
             print(f"❌ Model loading error: {e}")
             return "My local model failed to load. Please check your system."
 
     try:
         system_prompt = "You are Ellie, a helpful desktop voice assistant. Be concise, short, and friendly. Use simple language. Don't repeat responses twice."
-        messages = f"{system_prompt}\nUser: {prompt}\nEllie:"
+        
+        # 2. Use the strict Phi-3 Prompt Formatting
+        messages = f"<|system|>\n{system_prompt}<|end|>\n<|user|>\n{prompt}<|end|>\n<|assistant|>\n"
 
+        # 3. Generate the response
         output = local_llm(
             prompt=messages,
-            max_tokens=256,
+            max_tokens=75,                 # Keeps it short and punchy so Ellie speaks faster
             temperature=CHAT_TEMPERATURE,
-            stop=["User:", "ELLIE:", "Ellie:"]
+            stop=["<|end|>", "<|user|>"]   # Phi-3 specific stop tags
         )
 
         reply = output["choices"][0]["text"].strip()
         
-        # Optimize response for audio
+        # Optimize response for audio using your existing function
         reply = optimize_response(reply)
         
         print("🤖 Ellie:", reply)
         return reply if reply else "I'm here, but I didn't catch that."
 
     except Exception as e:
-        print(f"❌ Local Mistral error: {e}")
+        print(f"❌ Local Phi-3 error: {e}")
         return "I'm having trouble thinking right now. Please try again."
-
-
+    
 @eel.expose
 def list_microphones():
     try:
