@@ -567,30 +567,106 @@ def takeAllCommands(device_index=None):
                 "url": result.get('url'),
                 "reply": result.get('message')
             }
-        elif "send message" in recognized_text or "whatsapp" in recognized_text:
-                from backend.whatsapp_handler import findContact, listen_for_message, send_whatsapp_message
+    elif "send message" in lowered or "whatsapp" in lowered:
+        from backend.whatsapp_handler import findContact, listen_for_message, send_whatsapp_message
+        
+        # 1. Look up the person in the database
+        phone, name = findContact(recognized_text)
+        
+        if phone != 0:
+            # 2. Ask what to send
+            ask_msg = f"What message should I send to {name}?"
+            try:
+                speak_queued(ask_msg)
+            except:
+                pass
+            _safely_call_frontend_display(ask_msg)
+            
+            # 3. Listen for the payload via the handler
+            msg_payload = listen_for_message()
+            
+            if msg_payload:
+                try:
+                    speak_queued(f"Sending message to {name}...")
+                except:
+                    pass
+                _safely_call_frontend_display(f"Sending message to {name}...")
                 
-                # 1. Look up the person in the database
-                phone, name = findContact(recognized_text)
-                
-                if phone != 0:
-                    # 2. Ask what to send
-                    ask_msg = f"What message should I send to {name}?"
-                    speak(ask_msg)
-                    
-                    # 3. Listen for the payload via the handler
-                    msg_payload = listen_for_message()
-                    
-                    if msg_payload:
-                        speak(f"Sending message to {name}...")
-                        
-                        # 4. Automate WhatsApp
-                        result = send_whatsapp_message(phone, msg_payload, name)
-                        speak(result)
-                    else:
-                        speak("I didn't catch that. Message cancelled.")
-                else:
-                    speak(f"Sorry, I couldn't find {name} in your contacts.")
+                # 4. Automate WhatsApp
+                result = send_whatsapp_message(phone, msg_payload, name)
+                try:
+                    speak_queued(result)
+                except:
+                    pass
+                _safely_call_frontend_display(result)
+                _safely_call_frontend_showhood()
+            else:
+                try:
+                    speak_queued("I didn't catch that. Message cancelled.")
+                except:
+                    pass
+                _safely_call_frontend_display("Message cancelled.")
+        else:
+            try:
+                speak_queued(f"Sorry, I couldn't find {name} in your contacts.")
+            except:
+                pass
+            _safely_call_frontend_display("Contact not found.")
+
+    # ============== CAMERA / VISION COMMANDS ==============
+    vision_triggers = ("what is in front of me", "what do you see", "what's in front of me")
+    if any(phrase in lowered for phrase in vision_triggers):
+        from backend.vision_handler import detect_objects
+        
+        reply_start = "Let me take a look..."
+        try:
+            speak_queued(reply_start)
+        except Exception:
+            pass
+        _safely_call_frontend_display(reply_start)
+        
+        vision_result = detect_objects()
+        
+        try:
+            speak_queued(vision_result)
+        except Exception:
+            pass
+        _safely_call_frontend_display(vision_result)
+        _safely_call_frontend_showhood()
+        
+        return {
+            "success": True, 
+            "text": recognized_text, 
+            "action": "vision_objects", 
+            "reply": vision_result
+        }
+
+    face_triggers = ("who am i", "recognize me")
+    if any(phrase in lowered for phrase in face_triggers):
+        from backend.vision_handler import recognize_face
+        
+        reply_start = "Scanning faces..."
+        try:
+            speak_queued(reply_start)
+        except Exception:
+            pass
+        _safely_call_frontend_display(reply_start)
+        
+        face_result = recognize_face()
+        
+        try:
+            speak_queued(face_result)
+        except Exception:
+            pass
+        _safely_call_frontend_display(face_result)
+        _safely_call_frontend_showhood()
+        
+        return {
+            "success": True, 
+            "text": recognized_text, 
+            "action": "vision_faces", 
+            "reply": face_result
+        }
 
     # ============== OPEN/LAUNCH COMMAND ==============
     intent_found = any(kw in lowered for kw in ("open ", "launch ", "start "))
@@ -664,7 +740,6 @@ def takeAllCommands(device_index=None):
     _safely_call_frontend_display(reply)
     _safely_call_frontend_showhood()
     return {"success": True, "text": recognized_text, "action": "chat", "reply": reply}
-
 
 @eel.expose
 def process_recognized_command(recognized_text):

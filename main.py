@@ -15,6 +15,7 @@ from backend.reminders import reminder_manager
 from backend.wikipedia_browser import *
 from backend.gmail_handler import *
 from backend.weather_jaipur import *
+
 from backend.news_handler import *
 
 eel.init('frontend')
