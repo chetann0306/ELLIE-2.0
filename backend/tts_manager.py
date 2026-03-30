@@ -39,7 +39,7 @@ class TTSManager:
                     female_voice = None
                     
                     # Priority: Zira > Victoria > Samantha > Female > Any
-                    priority_names = ['zira', 'victoria', 'samantha', 'female', 'woman']
+                    priority_names = ['zira', 'hazel', 'victoria', 'samantha', 'female', 'woman']
                     
                     for priority_name in priority_names:
                         for voice in voices:

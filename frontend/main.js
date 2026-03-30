@@ -17,7 +17,7 @@ $(document).ready(function () {
     });
   }
 
-  // ================== HUD STATUS LOGIC ==================
+  // ================== HUD STATE MACHINE ==================
   function setSiriMessage(text) {
     $('.siri-message').stop(true, true).text(text);
     if ($('.siri-message').data('textillate')) {
@@ -25,18 +25,83 @@ $(document).ready(function () {
     }
   }
 
-  function showSiriView($btn) {
-    // Show the neon equalizer
-    $("#AudioVisualizer").fadeIn(300);
-    if ($btn) { $btn.prop("disabled", true).addClass("disabled"); }
+  function setIdleState() {
+    $("#StateListening").hide();
+    $("#StateThinking").hide();
+    $("#voiceIndicator").removeClass("active-speaking");
+    $("#MicBtn, #ChatBtn").prop("disabled", false).removeClass("disabled");
+    setSiriMessage("System Online. Ready.");
+  }
+
+  function setListeningState() {
+    $("#StateThinking").hide();
+    $("#voiceIndicator").removeClass("active-speaking");
+    $("#MicBtn, #ChatBtn").prop("disabled", true).addClass("disabled");
+    $("#StateListening").fadeIn(200);
     setSiriMessage("Listening...");
   }
 
-  function restoreMainView($btn) {
-    // Hide the neon equalizer completely
-    $("#AudioVisualizer").fadeOut(300);
-    if ($btn) { $btn.prop("disabled", false).removeClass("disabled"); }
-    setSiriMessage("Tap the mic to speak again");
+  function setThinkingState() {
+    $("#StateListening").hide();
+    $("#voiceIndicator").removeClass("active-speaking");
+    $("#StateThinking").fadeIn(200);
+    setSiriMessage("Processing...");
+  }
+
+  function setSpeakingState() {
+    $("#StateListening").hide();
+    $("#StateThinking").hide();
+    $("#voiceIndicator").addClass("active-speaking");
+    setSiriMessage("Speaking...");
+  }
+
+  // ================== STRICT FEMALE VOICE CONTROLLER ==================
+  // This ensures the browser never defaults to a male voice like "David"
+  function speakTextWithFemaleVoice(text, onEndCallback) {
+      if (!('speechSynthesis' in window)) {
+          if (onEndCallback) setTimeout(onEndCallback, 1500);
+          return;
+      }
+      
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1;
+      
+      // Load available voices
+      const voices = window.speechSynthesis.getVoices();
+      
+      // Strict list of common female voice engines
+      const femaleNames = ['zira', 'samantha', 'victoria', 'karen', 'hazel', 'tessa', 'melina', 'female', 'woman'];
+      let chosenVoice = null;
+      
+      for (let name of femaleNames) {
+          chosenVoice = voices.find(v => v.name.toLowerCase().includes(name));
+          if (chosenVoice) break;
+      }
+      
+      // Fallback: If no name matched, index 1 is almost always female on Windows
+      if (!chosenVoice && voices.length > 1) {
+          chosenVoice = voices[1];
+      }
+      
+      if (chosenVoice) {
+          u.voice = chosenVoice;
+      }
+
+      if (onEndCallback) {
+          u.onend = onEndCallback;
+          u.onerror = onEndCallback;
+      }
+      
+      window.speechSynthesis.speak(u);
+  }
+
+  // Trigger voice loading immediately so it's ready
+  if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = function() {
+          window.speechSynthesis.getVoices();
+      };
   }
 
   if (typeof eel === "undefined") {
@@ -46,30 +111,16 @@ $(document).ready(function () {
   // ================== STARTUP MESSAGE ==================
   function startupGreeting() {
     const welcomeText = "Welcome boss, I am ELLIE. How can I help you?";
-    
-    // HUD shows clean status instead of the paragraph
     setSiriMessage("System Online. Ready.");
 
     if (typeof eel !== "undefined" && eel.play_assistant_sound) {
       try { eel.play_assistant_sound()(); } catch (e) { console.warn("play_assistant_sound failed:", e); }
     }
 
-    if ('speechSynthesis' in window) {
-      try {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(welcomeText);
-        u.rate = 1;
-        u.onend = function () { setSiriMessage("Tap the mic to speak"); };
-        u.onerror = function () { setSiriMessage("Tap the mic to speak"); };
-        window.speechSynthesis.getVoices();
-        window.speechSynthesis.speak(u);
-      } catch (err) {
-        console.warn("Startup TTS failed:", err);
+    // Use our new strict female voice function
+    speakTextWithFemaleVoice(welcomeText, function() {
         setSiriMessage("Tap the mic to speak");
-      }
-    } else {
-      setTimeout(() => setSiriMessage("Tap the mic to speak"), 1200);
-    }
+    });
   }
 
   // ================== MIC BUTTON HANDLER ==================
@@ -77,7 +128,7 @@ $(document).ready(function () {
     const $btn = $(this);
     if ($btn.prop("disabled")) return;
 
-    showSiriView($btn);
+    setListeningState();
 
     if (typeof eel !== "undefined" && eel.play_assistant_sound) {
      try { eel.play_assistant_sound()(); } catch (e) { console.warn(e); }
@@ -88,7 +139,7 @@ $(document).ready(function () {
         eel.takeAllCommands()(function (res) {
           if (!res) {
             setSiriMessage("System Error: No Response");
-            setTimeout(function () { restoreMainView($btn); }, 1400);
+            setTimeout(function () { setIdleState(); }, 1400);
             return;
           }
 
@@ -97,69 +148,42 @@ $(document).ready(function () {
             $("#chatbox").val(recognized);
 
             if (res.action === "opened") {
-              setSiriMessage("Executing command...");
-              if ('speechSynthesis' in window) {
-                try {
-                  const u = new SpeechSynthesisUtterance(`Opened ${res.target}`);
-                  u.rate = 1;
-                  window.speechSynthesis.cancel();
-                  window.speechSynthesis.speak(u);
-                } catch (ttsErr) { console.warn("TTS error:", ttsErr); }
-              }
-              setTimeout(function () { restoreMainView($btn); }, 1500);
+              setSpeakingState();
+              speakTextWithFemaleVoice(`Opened ${res.target}`, function() {
+                  setIdleState();
+              });
               
             } else if (res.action === "failed") {
-              setSiriMessage("Action failed.");
-              if ('speechSynthesis' in window) {
-                try {
-                  const msg = res.reply || `Could not open ${res.target}`;
-                  const u = new SpeechSynthesisUtterance(msg);
-                  u.rate = 1;
-                  window.speechSynthesis.cancel();
-                  window.speechSynthesis.speak(u);
-                } catch (ttsErr) { console.warn("TTS error:", ttsErr); }
-              }
-              setTimeout(function () { restoreMainView($btn); }, 2000);
+              setSpeakingState();
+              const msg = res.reply || `Could not open ${res.target}`;
+              speakTextWithFemaleVoice(msg, function() {
+                  setIdleState();
+              });
               
             } else {
-              // The AI is speaking its response. Keep HUD clean!
-              setSiriMessage("Speaking...");
+              setSpeakingState();
               const reply = res.reply || recognized;
+              speakTextWithFemaleVoice(reply, function() {
+                  setIdleState();
+              });
               
-              if ('speechSynthesis' in window) {
-                try {
-                  window.speechSynthesis.cancel();
-                  const u = new SpeechSynthesisUtterance(reply);
-                  u.rate = 1;
-                  u.onend = function () { restoreMainView($btn); };
-                  u.onerror = function () { restoreMainView($btn); };
-                  window.speechSynthesis.speak(u);
-                  
-                  // Fades out the wave automatically based on how long the text takes to speak
-                  const fallbackMs = Math.max(2000, reply.length * 70) + 2000;
-                  setTimeout(function () { if ($btn.prop("disabled")) restoreMainView($btn); }, fallbackMs);
-                } catch (ttsErr) {
-                  console.warn("TTS error:", ttsErr);
-                  restoreMainView($btn);
-                }
-              } else {
-                setTimeout(function () { restoreMainView($btn); }, 2000);
-              }
+              // Fallback clear just in case TTS hangs
+              const fallbackMs = Math.max(3000, reply.length * 70) + 1000;
+              setTimeout(function () { setIdleState(); }, fallbackMs);
             }
           } else {
             setSiriMessage("I didn't catch that.");
-            setTimeout(function () { restoreMainView($btn); }, 1400);
+            setTimeout(function () { setIdleState(); }, 1400);
           }
         });
       } catch (err) {
         console.error("Error invoking eel.takeAllCommands:", err);
         setSiriMessage("Voice error. Try again.");
-        setTimeout(function () { restoreMainView($btn); }, 1400);
+        setTimeout(function () { setIdleState(); }, 1400);
       }
     } else {
-      console.warn("eel.takeAllCommands is not available.");
       setSiriMessage("Voice backend offline");
-      setTimeout(function () { restoreMainView($btn); }, 1400);
+      setTimeout(function () { setIdleState(); }, 1400);
     }
   });
 
@@ -169,34 +193,26 @@ $(document).ready(function () {
     if (txt.length > 0) {
       $("#chatbox").val("");
       
-      // Show wave and status
-      showSiriView($("#ChatBtn")); 
-      setSiriMessage("Processing...");
+      setThinkingState();
 
       if (typeof eel !== "undefined" && eel.process_recognized_command) {
         eel.process_recognized_command(txt)(function (res) {
           
           if (res && res.success) {
-            setSiriMessage("Speaking...");
+            setSpeakingState();
             
-            // Fades out the wave automatically after the AI finishes speaking
             const replyText = res.reply || "";
             const fallbackMs = Math.max(3000, replyText.length * 70) + 1000;
-            
-            setTimeout(function () { 
-              restoreMainView($("#ChatBtn")); 
-            }, fallbackMs);
+            setTimeout(function () { setIdleState(); }, fallbackMs);
 
           } else {
             setSiriMessage("Connection Failed.");
-            setTimeout(function () { 
-              restoreMainView($("#ChatBtn")); 
-            }, 2000);
+            setTimeout(function () { setIdleState(); }, 2000);
           }
         });
       } else {
         setSiriMessage("Backend offline.");
-        setTimeout(function () { restoreMainView($("#ChatBtn")); }, 2000);
+        setTimeout(function () { setIdleState(); }, 2000);
       }
     }
   }
@@ -206,12 +222,9 @@ $(document).ready(function () {
     if (e.which === 13) handleTextMessage();
   });
 
-  // ================== WAKE WORD EXPOSED FUNCTION ==================
-  // Called by Python backend when wake word is detected
   eel.expose(ShowSiriWave);
   function ShowSiriWave() {
-    $("#AudioVisualizer").fadeIn(300);
-    setSiriMessage("Listening...");
+    setListeningState();
   }
 
   // ================== AUTHENTICATION & STARTUP ==================
@@ -223,7 +236,6 @@ $(document).ready(function () {
         if (typeof eel !== "undefined" && eel.wake_listener) {
             try { 
                 eel.wake_listener(); 
-                console.log("Wake listener started successfully."); 
             } catch (e) { console.warn("Failed to start wake listener:", e); }
         }
     });
@@ -252,7 +264,6 @@ $(document).ready(function () {
   $("#loginBtn").on("click", handleLogin);
   $("#passwordInput").on("keypress", function(e) { if (e.which === 13) handleLogin(); });
 
-  // ================== FACE UNLOCK HANDLER ==================
   $("#faceUnlockBtn").on("click", function(e) {
       e.preventDefault();
       $("#LoginScreen").fadeOut(300, function() {

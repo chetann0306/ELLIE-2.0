@@ -47,7 +47,7 @@ class AudioSystem:
             voices = self.engine.getProperty("voices") or []
             if voices:
                 female_voice = None
-                priority_names = ['zira', 'victoria', 'samantha', 'female', 'woman']
+                priority_names = ['zira', 'hazel', 'victoria', 'samantha', 'female', 'woman']
                 
                 for priority_name in priority_names:
                     for voice in voices:
