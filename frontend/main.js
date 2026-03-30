@@ -1,7 +1,5 @@
-
-
 $(document).ready(function () {
-  // TEXT ANIMATION 
+  // ================== TEXT ANIMATION ==================
   if ($.fn.textillate) {
     $('.text').textillate({
       loop: true,
@@ -19,39 +17,7 @@ $(document).ready(function () {
     });
   }
 
-  //  SIRI WAVE 
-  var siriWave;
-  var siriRunning = false;
-  if (typeof SiriWave !== "undefined") {
-    siriWave = new SiriWave({
-      container: document.getElementById("siri-container"),
-      width: 940,
-      style: "ios9",
-      amplitude: 1,
-      speed: 0.30,
-      height: 120,
-      autostart: false,
-      waveColor: "#1e90ff",
-      waveOffset: 0,
-      rippleEffect: true,
-      rippleColor: "#ffffff",
-    });
-  }
-
-  function startSiriWave() {
-    if (siriWave && !siriRunning) {
-      siriWave.start();
-      siriRunning = true;
-    }
-  }
-
-  function stopSiriWave() {
-    if (siriWave && siriRunning) {
-      siriWave.stop();
-      siriRunning = false;
-    }
-  }
-
+  // ================== HUD STATUS LOGIC ==================
   function setSiriMessage(text) {
     $('.siri-message').stop(true, true).text(text);
     if ($('.siri-message').data('textillate')) {
@@ -60,29 +26,29 @@ $(document).ready(function () {
   }
 
   function showSiriView($btn) {
-    $("#Oval").attr("hidden", true);
-    $("#SiriWave").attr("hidden", false);
+    // Show the neon equalizer
+    $("#AudioVisualizer").fadeIn(300);
     if ($btn) { $btn.prop("disabled", true).addClass("disabled"); }
     setSiriMessage("Listening...");
-    startSiriWave();
   }
 
   function restoreMainView($btn) {
-    $("#Oval").attr("hidden", false);
-    $("#SiriWave").attr("hidden", true);
+    // Hide the neon equalizer completely
+    $("#AudioVisualizer").fadeOut(300);
     if ($btn) { $btn.prop("disabled", false).removeClass("disabled"); }
     setSiriMessage("Tap the mic to speak again");
-    stopSiriWave();
   }
 
   if (typeof eel === "undefined") {
     console.warn("eel is not defined. Serve via Eel (eel.js).");
   }
 
-  //  STARTUP MESSAGE 
+  // ================== STARTUP MESSAGE ==================
   function startupGreeting() {
     const welcomeText = "Welcome boss, I am ELLIE. How can I help you?";
-    setSiriMessage(welcomeText);
+    
+    // HUD shows clean status instead of the paragraph
+    setSiriMessage("System Online. Ready.");
 
     if (typeof eel !== "undefined" && eel.play_assistant_sound) {
       try { eel.play_assistant_sound()(); } catch (e) { console.warn("play_assistant_sound failed:", e); }
@@ -93,12 +59,8 @@ $(document).ready(function () {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(welcomeText);
         u.rate = 1;
-        u.onend = function () {
-          setSiriMessage("Tap the mic to speak");
-        };
-        u.onerror = function () {
-          setSiriMessage("Tap the mic to speak");
-        };
+        u.onend = function () { setSiriMessage("Tap the mic to speak"); };
+        u.onerror = function () { setSiriMessage("Tap the mic to speak"); };
         window.speechSynthesis.getVoices();
         window.speechSynthesis.speak(u);
       } catch (err) {
@@ -109,9 +71,8 @@ $(document).ready(function () {
       setTimeout(() => setSiriMessage("Tap the mic to speak"), 1200);
     }
   }
-  //startupGreeting();
 
-  //  MIC BUTTON HANDLER 
+  // ================== MIC BUTTON HANDLER ==================
   $("#MicBtn").on("click", function () {
     const $btn = $(this);
     if ($btn.prop("disabled")) return;
@@ -126,7 +87,7 @@ $(document).ready(function () {
       try {
         eel.takeAllCommands()(function (res) {
           if (!res) {
-            setSiriMessage("No response from voice backend");
+            setSiriMessage("System Error: No Response");
             setTimeout(function () { restoreMainView($btn); }, 1400);
             return;
           }
@@ -136,7 +97,7 @@ $(document).ready(function () {
             $("#chatbox").val(recognized);
 
             if (res.action === "opened") {
-              setSiriMessage(`Opened ${res.target}`);
+              setSiriMessage("Executing command...");
               if ('speechSynthesis' in window) {
                 try {
                   const u = new SpeechSynthesisUtterance(`Opened ${res.target}`);
@@ -145,24 +106,26 @@ $(document).ready(function () {
                   window.speechSynthesis.speak(u);
                 } catch (ttsErr) { console.warn("TTS error:", ttsErr); }
               }
-              setTimeout(function () { restoreMainView($btn); }, 700);
-
+              setTimeout(function () { restoreMainView($btn); }, 1500);
+              
             } else if (res.action === "failed") {
-              const msg = res.reply || `Could not open ${res.target}`;
-              setSiriMessage(msg);
+              setSiriMessage("Action failed.");
               if ('speechSynthesis' in window) {
                 try {
+                  const msg = res.reply || `Could not open ${res.target}`;
                   const u = new SpeechSynthesisUtterance(msg);
                   u.rate = 1;
                   window.speechSynthesis.cancel();
                   window.speechSynthesis.speak(u);
                 } catch (ttsErr) { console.warn("TTS error:", ttsErr); }
               }
-              setTimeout(function () { restoreMainView($btn); }, 1400);
-
+              setTimeout(function () { restoreMainView($btn); }, 2000);
+              
             } else {
+              // The AI is speaking its response. Keep HUD clean!
+              setSiriMessage("Speaking...");
               const reply = res.reply || recognized;
-              setSiriMessage(reply);
+              
               if ('speechSynthesis' in window) {
                 try {
                   window.speechSynthesis.cancel();
@@ -171,6 +134,8 @@ $(document).ready(function () {
                   u.onend = function () { restoreMainView($btn); };
                   u.onerror = function () { restoreMainView($btn); };
                   window.speechSynthesis.speak(u);
+                  
+                  // Fades out the wave automatically based on how long the text takes to speak
                   const fallbackMs = Math.max(2000, reply.length * 70) + 2000;
                   setTimeout(function () { if ($btn.prop("disabled")) restoreMainView($btn); }, fallbackMs);
                 } catch (ttsErr) {
@@ -178,12 +143,11 @@ $(document).ready(function () {
                   restoreMainView($btn);
                 }
               } else {
-                setTimeout(function () { restoreMainView($btn); }, 1400);
+                setTimeout(function () { restoreMainView($btn); }, 2000);
               }
             }
           } else {
-            const errMsg = res.error || "I didn't catch that.";
-            setSiriMessage(errMsg);
+            setSiriMessage("I didn't catch that.");
             setTimeout(function () { restoreMainView($btn); }, 1400);
           }
         });
@@ -194,34 +158,28 @@ $(document).ready(function () {
       }
     } else {
       console.warn("eel.takeAllCommands is not available.");
-      setSiriMessage("Voice backend not available");
+      setSiriMessage("Voice backend offline");
       setTimeout(function () { restoreMainView($btn); }, 1400);
     }
   });
 
-  //  CHAT BUTTON HANDLER 
-// ================== CHAT BUTTON & TEXT INPUT HANDLER ==================
+  // ================== CHAT BUTTON & TEXT INPUT HANDLER ==================
   function handleTextMessage() {
     const txt = $("#chatbox").val().trim();
-    
     if (txt.length > 0) {
-      // 1. Clear the input box
-      $("#chatbox").val(""); 
+      $("#chatbox").val("");
       
-      // 2. Show the Siri wave UI while it thinks
+      // Show wave and status
       showSiriView($("#ChatBtn")); 
       setSiriMessage("Processing...");
 
-      // 3. Send the text to the Python backend
       if (typeof eel !== "undefined" && eel.process_recognized_command) {
         eel.process_recognized_command(txt)(function (res) {
           
-          // Note: The Python backend automatically calls speak_queued(reply) 
-          // and _safely_call_frontend_display(reply), so the voice and text 
-          // will play automatically. We just handle the UI restoration here.
-          
           if (res && res.success) {
-            // Calculate a rough delay based on text length to keep the wave active while speaking
+            setSiriMessage("Speaking...");
+            
+            // Fades out the wave automatically after the AI finishes speaking
             const replyText = res.reply || "";
             const fallbackMs = Math.max(3000, replyText.length * 70) + 1000;
             
@@ -230,86 +188,49 @@ $(document).ready(function () {
             }, fallbackMs);
 
           } else {
-            const errMsg = res ? res.error : "Failed to connect to backend.";
-            setSiriMessage(errMsg);
+            setSiriMessage("Connection Failed.");
             setTimeout(function () { 
               restoreMainView($("#ChatBtn")); 
             }, 2000);
           }
         });
       } else {
-        setSiriMessage("Backend not connected.");
+        setSiriMessage("Backend offline.");
         setTimeout(function () { restoreMainView($("#ChatBtn")); }, 2000);
       }
     }
   }
 
-  // Trigger when the Chat button is clicked
-  $("#ChatBtn").on("click", function () {
-    handleTextMessage();
-  });
-
-  // Trigger when the 'Enter' key is pressed inside the chatbox
+  $("#ChatBtn").on("click", handleTextMessage);
   $("#chatbox").on("keypress", function (e) {
-    if (e.which === 13) { 
-      handleTextMessage();
-    }
+    if (e.which === 13) handleTextMessage();
   });
 
-  //  MICROPHONE DEBUG 
-  if (typeof eel !== "undefined" && eel.list_microphones) {
-    try {
-      eel.list_microphones()(function (names) {
-        console.log("Available microphones:", names);
-      });
-    } catch (e) {
-      console.warn("Failed to request microphone list:", e);
-    }
-  }
-
-  // ================== NEW: WAKE WORD LISTENER ==================
-  //if (typeof eel !== "undefined" && eel.wake_listener) {
-  //  try {
-  //    eel.wake_listener(); // starts Python background listener
-  //    console.log("Wake listener started successfully.");
-  //  } catch (e) {
-  //    console.warn("Failed to start wake listener:", e);
-  //  }
-  //}
-
-  // Called by backend when wake word is detected
+  // ================== WAKE WORD EXPOSED FUNCTION ==================
+  // Called by Python backend when wake word is detected
   eel.expose(ShowSiriWave);
   function ShowSiriWave() {
-    $("#Oval").attr("hidden", true);
-    $("#SiriWave").attr("hidden", false);
-    $(".siri-message").text("Listening...");
-    startSiriWave();
+    $("#AudioVisualizer").fadeIn(300);
+    setSiriMessage("Listening...");
   }
+
   // ================== AUTHENTICATION & STARTUP ==================
-  
   function unlockAssistant() {
-    // 1. Hide Login, Show Main App
     $("#LoginScreen").fadeOut(300, function() {
         $("#MainApp").fadeIn(500);
-        
-        // 2. Now that we are in, play the startup greeting
         startupGreeting();
         
-        // 3. Start the background microphone listener
         if (typeof eel !== "undefined" && eel.wake_listener) {
-            try {
-                eel.wake_listener();
-                console.log("Wake listener started successfully.");
-            } catch (e) {
-                console.warn("Failed to start wake listener:", e);
-            }
+            try { 
+                eel.wake_listener(); 
+                console.log("Wake listener started successfully."); 
+            } catch (e) { console.warn("Failed to start wake listener:", e); }
         }
     });
   }
 
   function handleLogin() {
     const pwd = $("#passwordInput").val().trim();
-    
     if (typeof eel !== "undefined" && eel.verify_password) {
         eel.verify_password(pwd)(function(isValid) {
             if (isValid) {
@@ -318,8 +239,9 @@ $(document).ready(function () {
             } else {
                 $("#loginError").fadeIn();
                 $("#passwordInput").val("").focus();
-                // Optional shake animation on error
-                $(".login-box").effect("shake", { distance: 5, times: 3 }, 300); 
+                if (typeof $(".login-box").effect === "function") {
+                    $(".login-box").effect("shake", { distance: 5, times: 3 }, 300); 
+                }
             }
         });
     } else {
@@ -327,68 +249,45 @@ $(document).ready(function () {
     }
   }
 
-  // Click the Unlock Button
-  $("#loginBtn").on("click", function() {
-      handleLogin();
-  });
+  $("#loginBtn").on("click", handleLogin);
+  $("#passwordInput").on("keypress", function(e) { if (e.which === 13) handleLogin(); });
 
-  // Press Enter to Unlock
-  $("#passwordInput").on("keypress", function(e) {
-      if (e.which === 13) {
-          handleLogin();
-      }
-  });
-// ================== FACE UNLOCK HANDLER ==================
+  // ================== FACE UNLOCK HANDLER ==================
   $("#faceUnlockBtn").on("click", function(e) {
       e.preventDefault();
-      
-      // 1. Hide Login Box, Show the Startup Sequence Screen
       $("#LoginScreen").fadeOut(300, function() {
           $("#Start").fadeIn(300);
-          
-          // Show the SVG Loader first
           $("#Loader").prop("hidden", false);
           $("#FaceAuth").prop("hidden", true);
           $("#FaceAuthSuccess").prop("hidden", true);
           $("#HelloGreet").prop("hidden", true);
           $("#WishMessage").text("Initializing Camera...");
           
-          // 2. After 1.5 seconds, switch to the Face Scanning Lottie
           setTimeout(function() {
               $("#Loader").prop("hidden", true);
               $("#FaceAuth").prop("hidden", false);
               $("#WishMessage").text("Scanning Face... Look at the lens!");
               
-              // Call Python to check the camera
               if (typeof eel !== "undefined" && eel.verify_face) {
                   eel.verify_face()(function(isValid) {
                       if (isValid === true) {
-                          
-                          // 3. Match Found! Show the Green Success Lottie
                           $("#FaceAuth").prop("hidden", true);
                           $("#FaceAuthSuccess").prop("hidden", false);
                           $("#WishMessage").text("Identity Verified.");
                           
-                          // 4. After 2 seconds, show the Welcome Greet Lottie
                           setTimeout(function() {
                               $("#FaceAuthSuccess").prop("hidden", true);
                               $("#HelloGreet").prop("hidden", false);
                               $("#WishMessage").text("Welcome back, Boss.");
                               
-                              // 5. Finally, unlock the main assistant UI
                               setTimeout(function() {
-                                  $("#Start").fadeOut(500, function() {
-                                      unlockAssistant();
-                                  });
+                                  $("#Start").fadeOut(500, function() { unlockAssistant(); });
                               }, 2500);
-                              
                           }, 2000);
-                          
                       } else {
-                          // Failed Match: Go back to Login Screen
                           $("#Start").fadeOut(300, function() {
                               $("#LoginScreen").fadeIn(300);
-                              $("#loginError").text("Face not recognized. Try again or use password.").css("color", "#ff4444").fadeIn();
+                              $("#loginError").text("Face not recognized.").css("color", "#ff4444").fadeIn();
                               if (typeof $(".login-box").effect === "function") {
                                   $(".login-box").effect("shake", { distance: 5, times: 3 }, 300);
                               }
@@ -401,7 +300,7 @@ $(document).ready(function () {
                   $("#LoginScreen").show();
                   $("#loginError").text("Camera module not connected.").css("color", "#ff4444").fadeIn();
               }
-          }, 1500); // Time to show the initial SVG loader
+          }, 1500);
       });
   });
 });

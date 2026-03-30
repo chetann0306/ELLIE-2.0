@@ -3,54 +3,50 @@ body {
   overflow-y: hidden;
   overflow-x: hidden;
 }
-.square{
-    width :400px;
-    height :400px;
-    position:relative;
-    display:flex;
+/* --- ARC REACTOR CORE UPGRADE --- */
+.square {
+    width: 300px; /* Made slightly smaller for HUD fit */
+    height: 300px;
+    position: relative;
+    display: flex;
     justify-content: center;
     align-items: center;
 }
-.square span:nth-child(1){
+
+.square span {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: radial-gradient(#6b72ff00 50%, #000dff3b 50%);
-    box-shadow: 0 0 50px rgb(25, 255, 71),inset 0 0 50px rgb(140, 255, 25);
-    border-radius:30% 60% 63% 37%/40% 45% 58% 60%;
-    transition:0.4s;
-    cursor: pointer;
-    animation: animate1 6s infinite linear;
-}
-.square span:nth-child(2){
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: radial-gradient(#6b72ff00 50%, #000dff3b 50%);
-    box-shadow: 0 0 50px rgb(224, 255, 25),inset 0 0 50px rgba(182, 255, 25, 0.597);
-    border-radius:30% 60% 63% 37%/40% 45% 58% 60%;
-    transition:0.4s;
-    cursor: pointer;
-    animation: animate2 4s infinite linear;
-}
-.square span:nth-child(3){
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: radial-gradient(#6b72ff00 50%, #000dff3b 50%);
-    box-shadow: 0 0 50px rgb(230, 29, 29),inset 0 0 50px rgb(167, 255, 25);
-    border-radius:30% 60% 63% 37%/40% 45% 58% 60%;
-    transition:0.4s;
-    cursor: pointer;
-    animation: animate3 8s infinite linear;
+    top: 0; left: 0; width: 100%; height: 100%;
+    border-radius: 50%; /* Perfect circles instead of blobs */
+    background: transparent;
 }
 
+/* Outer spinning dashed ring */
+.square span:nth-child(1) {
+    border: 3px dashed rgba(30, 144, 255, 0.8);
+    box-shadow: 0 0 20px rgba(30, 144, 255, 0.5);
+    animation: animate1 10s infinite linear;
+}
+
+/* Inner solid glowing ring */
+.square span:nth-child(2) {
+    transform: scale(0.8);
+    border: 5px solid rgba(0, 255, 255, 0.5);
+    box-shadow: 0 0 30px #00ffff, inset 0 0 30px #00ffff;
+    animation: animate2 5s infinite linear reverse;
+}
+
+/* Innermost bright core */
+.square span:nth-child(3) {
+    transform: scale(0.5);
+    background: radial-gradient(circle, #ffffff 0%, rgba(30,144,255,0.8) 50%, transparent 70%);
+    box-shadow: 0 0 50px #ffffff;
+    animation: pulse 2s infinite alternate;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.45); opacity: 0.8; }
+    100% { transform: scale(0.55); opacity: 1; }
+}
 
 @keyframes animate1 {
     0% {
@@ -263,4 +259,61 @@ body {
 
 @keyframes rotate {
   to { transform: rotate(360deg); }
+}
+
+/* --- J.A.R.V.I.S. HUD FLOATING PANELS --- */
+.hud-panel {
+    background: rgba(0, 20, 40, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(30, 144, 255, 0.3);
+    box-shadow: 0 0 20px rgba(30, 144, 255, 0.15), inset 0 0 15px rgba(30, 144, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    color: #66FCF1;
+    transition: all 0.3s ease;
+    z-index: 100;
+    
+    /* CHANGE THIS FROM ABSOLUTE TO FIXED */
+    position: fixed; 
+}
+
+.hud-panel h4 {
+    font-family: 'Orbitron', 'Rajdhani', sans-serif; /* Tech fonts */
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(30, 144, 255, 0.5);
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+}
+/* ================== CYBER AUDIO EQUALIZER ================== */
+.cyber-equalizer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 80px;
+}
+
+.cyber-equalizer .bar {
+    width: 6px;
+    border-radius: 5px;
+    background: #66FCF1; /* Neon Cyan */
+    box-shadow: 0 0 15px #66FCF1, 0 0 30px #66FCF1;
+    animation: eq-pulse 1s infinite ease-in-out alternate;
+}
+
+/* Stagger the animations so they bounce randomly like real audio */
+.cyber-equalizer .bar:nth-child(1) { animation-duration: 0.7s; animation-delay: 0.1s; }
+.cyber-equalizer .bar:nth-child(2) { animation-duration: 0.9s; animation-delay: 0.4s; }
+.cyber-equalizer .bar:nth-child(3) { animation-duration: 0.6s; animation-delay: 0.2s; }
+.cyber-equalizer .bar:nth-child(4) { animation-duration: 1.1s; animation-delay: 0.6s; }
+.cyber-equalizer .bar:nth-child(5) { animation-duration: 0.8s; animation-delay: 0.3s; }
+.cyber-equalizer .bar:nth-child(6) { animation-duration: 0.7s; animation-delay: 0.8s; }
+.cyber-equalizer .bar:nth-child(7) { animation-duration: 1.0s; animation-delay: 0.5s; }
+
+@keyframes eq-pulse {
+    0% { height: 10px; opacity: 0.5; }
+    100% { height: 60px; opacity: 1; }
 }
