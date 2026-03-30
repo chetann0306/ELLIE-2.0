@@ -972,6 +972,34 @@ def process_recognized_command(recognized_text):
                 _safely_call_frontend_showhood()
                 return {"success": True, "text": recognized_text, "action": "failed", "target": None, "error": str(e), "reply": reply}
 
+        # ============== WHATSAPP AUTOMATION COMMANDS ==============
+        from backend.whatsapp_automation import WhatsAppController
+        wa = WhatsAppController()
+
+        if "whatsapp" in lowered:
+            # 1. SENDING A MESSAGE
+            if "send" in lowered:
+                # Example: "Send a WhatsApp to Chetan saying I am coming"
+                recipient = "Chetan" # Replace with regex to extract name
+                msg_content = "Hello, this is an automated message from ELLIE." 
+                
+                _safely_call_frontend_display(f"Messaging {recipient}...")
+                if wa.send_message(recipient, msg_content):
+                    reply = f"Message sent to {recipient}, Boss."
+                else:
+                    reply = "I had trouble accessing WhatsApp Web."
+                
+                speak_queued(reply)
+                return {"success": True, "reply": reply}
+
+            # 2. READING MESSAGES
+            elif "read" in lowered:
+                _safely_call_frontend_display("Reading last message...")
+                last_msg = wa.read_last_message()
+                reply = f"The last message received was: {last_msg}"
+                speak_queued(reply)
+                return {"success": True, "reply": reply}
+
         # ============== DEFAULT: AI CHAT RESPONSE ==============
         print(f"🤖 Processing as AI chat: '{recognized_text}'")
         reply = ai_chat_response(recognized_text)
