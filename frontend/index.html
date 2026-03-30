@@ -159,19 +159,18 @@
                             </div>         
                         </div>
 
-                        <div id="AudioVisualizer" style="display: none; position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); z-index: 100; text-align: center;">
+                        <div id="DynamicStatusArea" style="position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); z-index: 100; text-align: center;">
                             <p class="text-light mb-2 siri-message" style="font-family: 'Orbitron', sans-serif; letter-spacing: 2px; color: #66FCF1 !important; font-weight: bold;"></p>
-                            <div class="cyber-equalizer">
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                                <div class="bar"></div>
+                            
+                            <div id="StateListening" class="cyber-equalizer" style="display: none;">
+                                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                            </div>
+
+                            <div id="StateThinking" class="thinking-dots" style="display: none;">
+                                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
                             </div>
                         </div>
-
                         <div class="col-md-12 mt-4 pt-4" style="position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 60%; z-index: 100;">
                             <div class="text-center">
                                 <div id="TextInput" class="d-flex align-items-center justify-content-center">

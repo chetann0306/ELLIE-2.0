@@ -862,6 +862,52 @@ def process_recognized_command(recognized_text):
                     "url": result.get('url'),
                     "reply": result.get('message')
                 }
+        
+        # ============== FILE SEARCH COMMAND ==============
+        file_triggers = ("find my", "search for file", "open my file", "open my")
+        
+        # Check if the user is looking for a specific personal file (e.g. "open my dsa notes")
+        if any(phrase in lowered for phrase in file_triggers) and not any(kw in lowered for kw in ("gmail", "whatsapp", "youtube")):
+            
+            # Extract just the filename from the spoken command
+            search_term = lowered
+            for phrase in file_triggers:
+                if phrase in search_term:
+                    search_term = search_term.split(phrase, 1)[1].strip()
+                    break
+            
+            # Remove filler words
+            search_term = search_term.replace("file", "").replace("notes", "").strip()
+            
+            if search_term and len(search_term) > 1:
+                from backend.file_search import search_local_files, open_file
+                
+                # Immediate HUD feedback
+                _safely_call_frontend_display(f"Scanning drives for '{search_term}'...")
+                
+                try:
+                    speak_queued(f"Scanning primary directories for {search_term}.")
+                except Exception:
+                    pass
+                
+                # Execute the rapid sweep
+                filepath = search_local_files(search_term)
+                
+                if filepath:
+                    file_basename = os.path.basename(filepath)
+                    reply = f"File located. Accessing {file_basename} now, Boss."
+                    open_file(filepath)
+                else:
+                    reply = f"I could not locate {search_term} in your primary directories."
+                    
+                try:
+                    speak_queued(reply)
+                except Exception:
+                    pass
+                    
+                _safely_call_frontend_display(reply)
+                _safely_call_frontend_showhood()
+                return {"success": True, "text": recognized_text, "action": "file_search", "reply": reply}
 
         # ============== OPEN/LAUNCH COMMAND ==============
         intent_found = any(kw in lowered for kw in ("open ", "launch ", "start "))
