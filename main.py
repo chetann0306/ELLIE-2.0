@@ -11,7 +11,7 @@ from backend.audio_system import audio_system
 from backend.voice_handler import speak, speak_queued
 from backend.wake_word_detector import start_wake_word_detection
 from backend.voice_config import voice_config
-from backend.reminders import reminder_manager
+#from backend.reminders import reminder_manager
 from backend.wikipedia_browser import *
 from backend.gmail_handler import *
 from backend.weather_jaipur import *
